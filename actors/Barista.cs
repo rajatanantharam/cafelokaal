@@ -17,7 +17,7 @@ public class Barista
 
     [Function(nameof(Barista))]
     public async Task Run(
-        [ServiceBusTrigger("prepare-order", "cafelokaal-orders", Connection = "AzureWebJobsStorage")]
+        [ServiceBusTrigger("order-placed", Connection = "AzureWebJobsStorage")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
@@ -25,15 +25,25 @@ public class Barista
         _logger.LogInformation("Message Body: {body}", message.Body);
         _logger.LogInformation("Message Content-Type: {contentType}", message.ContentType);
 
-        // Process the order, e.g., prepare the coffee
-        // Here you would typically check the order details, prepare the coffee, etc.
-        _logger.LogInformation("Preparing order for ID: {orderId}", message.MessageId);
-        // Simulate coffee preparation delay
-        await Task.Delay(2000); // Simulate a delay for coffee preparation
-        _logger.LogInformation("Order prepared successfully for ID: {orderId}", message.MessageId);
-        // After preparing the order, you can publish a new message to the "order-ready" topic
-        _logger.LogInformation("Publishing message to order-ready topic for order ID: {orderId}", message.MessageId);  
+        // Simulate some processing delay      
+        await Task.Delay(1000);
 
+        // Publish a message to the order-ready queue
+        var orderReadyMessage = new ServiceBusMessage(message.Body)
+        {
+            ContentType = message.ContentType,
+            MessageId = message.MessageId
+        };
+    
+        // Send the message to the "order-ready" queue
+        var serviceBusClient = new ServiceBusClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"));
+        var sender = serviceBusClient.CreateSender("order-ready");
+        await sender.SendMessageAsync(orderReadyMessage);  
+        _logger.LogInformation("Order ready message sent with ID: {id}", orderReadyMessage.MessageId); 
+        // Close the sender
+        await sender.DisposeAsync();
+        await serviceBusClient.DisposeAsync();
+    
         // Complete the message
         await messageActions.CompleteMessageAsync(message);
     }
