@@ -34,10 +34,11 @@ public class Barista
             ContentType = message.ContentType,
             MessageId = message.MessageId
         };
-    
+
+        
         // Send the message to the "order-ready" queue
         var serviceBusClient = new ServiceBusClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"));
-        var sender = serviceBusClient.CreateSender("order-ready");
+        var sender = serviceBusClient.CreateSender(Constants.ServiceBusQueueNameOrderReady);
         await sender.SendMessageAsync(orderReadyMessage);  
         _logger.LogInformation("Order ready message sent with ID: {id}", orderReadyMessage.MessageId); 
         // Close the sender

@@ -32,8 +32,9 @@ public class Cashier
             Items = new[] { "Coffee", "Croissant" },
             TotalAmount = 5.50
         };
+
         var serviceBusClient = new ServiceBusClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"));
-        var sender = serviceBusClient.CreateSender("order-placed");
+        var sender = serviceBusClient.CreateSender(Constants.ServiceBusQueueNameOrderPlaced);
         var message = new ServiceBusMessage(JsonSerializer.Serialize(orderPlacedMessage))
         {
             ContentType = "application/json",
